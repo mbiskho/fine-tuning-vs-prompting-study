@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  train:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: ft-vs-prompt-train
+    volumes:
+      - ../data:/app/data
+      - ../models:/app/models
+      - ../results:/app/results
+      - ../config:/app/config
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - WANDB_API_KEY=${WANDB_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: train --data-dir /app/data --task classification
+    profiles:
+      - train
+
+  evaluate:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: ft-vs-prompt-eval
+    volumes:
+      - ../data:/app/data
+      - ../results:/app/results
+      - ../config:/app/config
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    command: evaluate-prompting --data-dir /app/data --output /app/results
+    profiles:
+      - evaluate
